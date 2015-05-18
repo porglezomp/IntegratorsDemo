@@ -4,6 +4,11 @@
 }
 
 canvas#canvas {
+    float: right;
     width: 800px;
     height: 600px;
+}
+
+#controls {
+    float: right;
 }

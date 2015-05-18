@@ -10,6 +10,34 @@
         <canvas id="canvas" width="800" height="600">
         </canvas>
     </div>
+    <div id="controls">
+        <div id="integrator">
+            <h4>Integrator</h4>
+            <input type="radio" name="integrator" value="exact" checked> Exact <br>
+            <input type="radio" name="integrator" value="euler"> Euler <br>
+            <input type="radio" name="integrator" value="midpoint"> Midpoint <br>
+            <input type="radio" name="integrator" value="rk4"> RK4 <br>
+            <input type="radio" name="integrator" value="leapfrog"> Leapfrog
+        </div>
+        <div id="problem">
+            <h4>Problem</h4>
+            <input type="radio" name="problem" value="decay" checked> Decay <br>
+            <input type="radio" name="problem" value="spring"> Spring <br>
+            <input type="radio" name="problem" value="gravity"> Gravity
+        </div>
+        <div id="tweaks">
+            <h4>Integrator<br>Tweaks</h4>
+            Steps:
+            <input id="steps" type="text" size="3" maxlength="3"><br>
+            T<sub>0</sub>:
+            <input id="t0num" type="text" size="6" maxlength="6"><br>
+            T<sub>1</sub>:
+            <input id="t1num" type="text" size="6" maxlength="6"><br>
+            
+            <button id="restart">Restart</button>
+        </div>
+    </div>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script type="text/javascript" src="scripts/script.js"></script>
 </body>
 </html>

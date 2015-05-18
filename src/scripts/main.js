@@ -1,48 +1,6 @@
+$(function() { // Begin jQuery
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-
-function euler(f, x0, t0, t1, n) {
-    let h = (t1 - t0)/n, t = t0, x = x0;
-    let results = [];
-    for (let i = 0; i < n; i++) {
-        x += f(x)*h;
-        t += h;
-        results.push([x]);
-    }
-    return results;
-}
-
-function euler2(f, g, x0, v0, t0, t1, n) {
-    let h = (t1 - t0)/n, t = t0, x = x0, v = v0;
-    let results = [];
-    for (let i = 0; i < n; i++) {
-        [x, v] = [x + h*f(x, v),
-                  v + h*g(x, v)];
-        t += h;
-        results.push([x, v]);
-    }
-    return results;
-}
-
-function rk42(f, g, x0, v0, t0, t1, n) {
-    let h = (t1 - t0)/n, t = t0, x = x0, v = v0;
-    let results = [];
-    for (let i = 0; i < n; i++) {
-        const k1 = h*f(x, v),
-              l1 = h*g(x, v);
-        const k2 = h*f(x + k1/2, v + l1/2),
-              l2 = h*g(x + k1/2, v + l1/2);
-        const k3 = h*f(x + k2/2, v + l2/2),
-              l3 = h*g(x + k2/2, v + l2/2);
-        const k4 = h*f(x + k3, v + l3),
-              l4 = g(x + k3, v + l3);
-        [x, v] = [x + (k1 + 2*(k2 + k3) + k4)/6,
-                  v + (l1 + 2*(l2 + l3) + l4)/6];
-        t += h;
-        results.push([x, v]);
-    }
-    return results;
-}
 
 const margin = 10;
 const rightMargin = canvas.width - margin;
@@ -115,14 +73,80 @@ function animate(points, duration, map=undefined) {
         time += 1/60;
     }
     const id = setInterval(frame, 1000/30);
+    return id;
 }
 
-const list = euler(x => -x, 1, 0, 21, 20);
-const list2 = rk42((_, v) => v, (x, _) => -x, 1, 0, 0, 21, 80);
-const list3 = euler2((_, v) => v, (x, _) => -x, 1, 0, 0, 21, 80);
-const ps = list2.map(a => a[0]);
-const ps2 = list3.map(a => a[0]);
-const min = Math.min(arrayMin(ps), arrayMin(ps2)),
-      max = Math.max(arrayMax(ps), arrayMax(ps2));
-animate(list2, 2, makeMapper(min, max));
-animate(list3, 2, makeMapper(min, max));
+// const list = euler(x => -x, 1, 0, 21, 20);
+// const list2 = rk42((_, v) => v, (x, _) => -x, 1, 0, 0, 21, 80);
+// const list3 = euler2((_, v) => v, (x, _) => -x, 1, 0, 0, 21, 80);
+// const ps = list2.map(a => a[0]);
+// const ps2 = list3.map(a => a[0]);
+// const min = Math.min(arrayMin(ps), arrayMin(ps2)),
+//       max = Math.max(arrayMax(ps), arrayMax(ps2));
+
+const integratorFns = {
+    "euler": euler,
+    "euler2": euler2,
+    "midpoint": midpoint,
+    "midpoint2": midpoint2,
+    "rk4": rk4,
+    "rk42": rk42,
+    "leapfrog2": leapfrog2
+};
+
+let id;
+let t0 = $("#t0num")[0].value = 0;
+$("#t0num").change(function() { t0 = this.value; });
+
+let t1 = $("#t1num")[0].value = 6;
+$("#t1num").change(function() { t1 = this.value; });
+
+let n = $("#steps")[0].value = 10;
+$("#steps").change(function() { n = this.value; });
+
+let currentIntegrator = $("input[name=integrator]:checked")[0].value;
+console.log(currentIntegrator);
+$("input[name=integrator]:radio").change(function() {
+    currentIntegrator = this.value;
+    restart();
+});
+
+let currentProblem = $("input[name=problem]:checked")[0].value;
+console.log(currentProblem);
+$("input[name=problem]:radio").change(function() {
+    currentProblem = this.value;
+    restart();
+});
+
+$("#restart").click(restart);
+function restart() {
+    clearInterval(id);
+    console.log(t0, t1, n);
+    if (currentProblem === "decay" || currentProblem === "spring") {
+        if (currentIntegrator === "exact") {
+            const times = Array.from(range(0, n)).map(i => (t1 - t0)/n * i);
+            let points;
+            if (currentProblem === "decay") {
+                points = times.map(t => [Math.exp(-t)]);    
+            } else {
+                points = times.map(t => [Math.cos(t)]);    
+            }
+            
+            id = animate(points, 2);
+        } else {
+            let problemArgs, integratorFn;
+            if (currentProblem === "decay") {
+                problemArgs = [x => -x, 1, t0, t1, n];
+                integratorFn = integratorFns[currentIntegrator];
+            } else {
+                problemArgs = [(_, v) => v, (x, _) => -x, 1, 0, t0, t1, n];
+                integratorFn = integratorFns[currentIntegrator + "2"];
+            }
+            
+            const points = integratorFn(...problemArgs);
+            id = animate(points, 2);
+        }
+    }
+}
+
+}); // End jQuery
