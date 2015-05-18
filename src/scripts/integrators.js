@@ -71,7 +71,7 @@ function rk42(f, g, x0, v0, t0, t1, n) {
         const k3 = h*f(x + k2/2, v + l2/2),
               l3 = h*g(x + k2/2, v + l2/2);
         const k4 = h*f(x + k3, v + l3),
-              l4 = g(x + k3, v + l3);
+              l4 = h*g(x + k3, v + l3);
         [x, v] = [x + (k1 + 2*(k2 + k3) + k4)/6,
                   v + (l1 + 2*(l2 + l3) + l4)/6];
         t += h;
