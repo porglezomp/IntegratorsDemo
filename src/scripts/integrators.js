@@ -1,6 +1,7 @@
 function euler(f, x0, t0, t1, n) {
     const h = (t1 - t0)/n;
     let results = [], t = t0, x = x0;
+    results.push([x]);
     for (let i = 0; i < n; i++) {
         x += f(x)*h;
         t += h;
@@ -12,6 +13,7 @@ function euler(f, x0, t0, t1, n) {
 function euler2(f, g, x0, v0, t0, t1, n) {
     const h = (t1 - t0)/n;
     let results = [], t = t0, x = x0, v = v0;
+    results.push([x, v]);
     for (let i = 0; i < n; i++) {
         [x, v] = [x + h*f(x, v),
                   v + h*g(x, v)];
@@ -24,6 +26,7 @@ function euler2(f, g, x0, v0, t0, t1, n) {
 function midpoint(f, x0, t0, t1, n) {
     const h = (t1 - t0)/n;
     let results = [], t = t0, x = x0;
+    results.push([x]);
     for (let i = 0; i < n; i++) {
         x += h*f(x + h*f(x)/2);
         t += h;
@@ -35,6 +38,7 @@ function midpoint(f, x0, t0, t1, n) {
 function midpoint2(f, g, x0, v0, t0, t1, n) {
     const h = (t1 - t0)/n;
     let results = [], t = t0, x = x0, v = v0;
+    results.push([x, v]);
     for (let i = 0; i < n; i++) {
         [x, v] = [x + h*f(x + h*f(x, v)/2, v + h*g(x, v)/2),
                   v + h*g(x + h*f(x, v)/2, v + h*g(x, v)/2)];
@@ -48,6 +52,7 @@ function midpoint2(f, g, x0, v0, t0, t1, n) {
 function rk4(f, x0, t0, t1, n) {
     const h = (t1 - t0)/n;
     let results = [], t = t0, x = x0;
+    results.push([x]);
     for (let i = 0; i < n; i++) {
         const k1 = h*f(x);
         const k2 = h*f(x + k1/2);
@@ -63,6 +68,7 @@ function rk4(f, x0, t0, t1, n) {
 function rk42(f, g, x0, v0, t0, t1, n) {
     const h = (t1 - t0)/n;
     let results = [], t = t0, x = x0, v = v0;
+    results.push([x, v]);
     for (let i = 0; i < n; i++) {
         const k1 = h*f(x, v),
               l1 = h*g(x, v);
@@ -83,6 +89,7 @@ function rk42(f, g, x0, v0, t0, t1, n) {
 function leapfrog2(_, F, x0, v0, t0, t1, n) {
     const h = (t1 - t0)/n;
     let results = [], t = t0, x = x0, v = v0;
+    results.push([x, v]);
     for (let i = 0; i < n; i++) {
         const a = F(x);
         x += (v + a*h/2)*h;

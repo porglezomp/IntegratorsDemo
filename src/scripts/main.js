@@ -15,7 +15,16 @@ function makeMapper(min, max) {
     };
 }
 
-function animate(points, duration, map=undefined) {    
+let runningAnimations = [];
+setInterval(performAnimations, 1000/30);
+function performAnimations() {
+    canvas.width = canvas.width;
+    for (let anim of runningAnimations) {
+        anim();
+    }
+}
+
+function animate(points, duration, map=undefined, color="black") {    
     let time = 0;
 
     const ps = points.map(a => a[0]);
@@ -23,16 +32,12 @@ function animate(points, duration, map=undefined) {
 
     const mapper = map || makeMapper(min, max);
     function frame () {
-        canvas.width = canvas.width;
         ctx.lineWidth = 4;
         ctx.lineCap = ctx.lineJoin = "round";
-        ctx.lineColor = "black";
+        ctx.strokeStyle = ctx.fillStyle = color;
 
         let s = time/duration;
-        if (s >= 1) {
-            clearInterval(id);
-            s = 1;
-        }
+        if (s >= 1) s = 1;
 
         const index = (points.length - 1) * s;
         const [i, f] = [floor(index), fract(index)];
@@ -72,17 +77,8 @@ function animate(points, duration, map=undefined) {
 
         time += 1/60;
     }
-    const id = setInterval(frame, 1000/30);
-    return id;
+    runningAnimations.push(frame);
 }
-
-// const list = euler(x => -x, 1, 0, 21, 20);
-// const list2 = rk42((_, v) => v, (x, _) => -x, 1, 0, 0, 21, 80);
-// const list3 = euler2((_, v) => v, (x, _) => -x, 1, 0, 0, 21, 80);
-// const ps = list2.map(a => a[0]);
-// const ps2 = list3.map(a => a[0]);
-// const min = Math.min(arrayMin(ps), arrayMin(ps2)),
-//       max = Math.max(arrayMax(ps), arrayMax(ps2));
 
 const integratorFns = {
     "euler": euler,
@@ -94,58 +90,97 @@ const integratorFns = {
     "leapfrog2": leapfrog2
 };
 
-let id;
+const integratorColors = {
+    "euler": "red",
+    "midpoint": "blue",
+    "rk4": "green",
+    "leapfrog": "orange"
+};
+
 let t0 = $("#t0num")[0].value = 0;
-$("#t0num").change(function() { t0 = this.value; });
+$("#t0num").change(function() { t0 = Number(this.value); });
 
 let t1 = $("#t1num")[0].value = 6;
-$("#t1num").change(function() { t1 = this.value; });
+$("#t1num").change(function() { t1 = Number(this.value); });
 
 let n = $("#steps")[0].value = 10;
-$("#steps").change(function() { n = this.value; });
+$("#steps").change(function() { n = Number(this.value); });
 
-let currentIntegrator = $("input[name=integrator]:checked")[0].value;
-console.log(currentIntegrator);
-$("input[name=integrator]:radio").change(function() {
-    currentIntegrator = this.value;
+let currentIntegrators = new Set([$("input[name=integrator]:checked")[0].value]);
+$("input[name=integrator]:checkbox").change(function() {
+    if (this.checked) {
+        currentIntegrators.add(this.value);
+    } else {
+        currentIntegrators.delete(this.value);
+    }
     restart();
 });
 
 let currentProblem = $("input[name=problem]:checked")[0].value;
-console.log(currentProblem);
+function setIntegratorVisibility() {
+    $("#exact, #leapfrog").show();
+    if (currentProblem === "gravity") {
+        $("#exact").hide();
+    } else if (currentProblem === "decay") {
+        $("#leapfrog").hide();
+    }
+}
+setIntegratorVisibility();
 $("input[name=problem]:radio").change(function() {
     currentProblem = this.value;
+    setIntegratorVisibility();
     restart();
 });
 
 $("#restart").click(restart);
 function restart() {
-    clearInterval(id);
-    console.log(t0, t1, n);
-    if (currentProblem === "decay" || currentProblem === "spring") {
-        if (currentIntegrator === "exact") {
-            const times = Array.from(range(0, n)).map(i => (t1 - t0)/n * i);
-            let points;
-            if (currentProblem === "decay") {
-                points = times.map(t => [Math.exp(-t)]);    
+    runningAnimations = [];
+    let animationList = [];
+    for (let currentIntegrator of currentIntegrators) {
+        if (currentProblem === "decay" || currentProblem === "spring") {
+            let color = integratorColors[currentIntegrator];
+            if (currentIntegrator === "exact") {
+                console.log(t0, t1, n);
+                const times = Array.from(range(0, n+1)).map(i => (t1 - t0)/n * i);
+                let points;
+                if (currentProblem === "decay") {
+                    points = times.map(t => [Math.exp(-t)]);    
+                } else {
+                    points = times.map(t => [Math.cos(t)]);    
+                }
+                
+                animationList.push({points, color});
             } else {
-                points = times.map(t => [Math.cos(t)]);    
+                let problemArgs, integratorFn;
+                if (currentProblem === "decay") {
+                    // The leapfrog integrator only makes sense for x'' = F(x),
+                    // and the decay problem isn't in that form.
+                    if (currentIntegrator === "leapfrog") continue;
+
+                    problemArgs = [x => -x, 1, t0, t1, n];
+                    integratorFn = integratorFns[currentIntegrator];
+                } else {
+                    problemArgs = [(_, v) => v, (x, _) => -x, 1, 0, t0, t1, n];
+                    integratorFn = integratorFns[currentIntegrator + "2"];
+                }
+                
+                let points = integratorFn(...problemArgs);
+                animationList.push({points, color});
             }
-            
-            id = animate(points, 2);
-        } else {
-            let problemArgs, integratorFn;
-            if (currentProblem === "decay") {
-                problemArgs = [x => -x, 1, t0, t1, n];
-                integratorFn = integratorFns[currentIntegrator];
-            } else {
-                problemArgs = [(_, v) => v, (x, _) => -x, 1, 0, t0, t1, n];
-                integratorFn = integratorFns[currentIntegrator + "2"];
-            }
-            
-            const points = integratorFn(...problemArgs);
-            id = animate(points, 2);
         }
+    }
+
+    let min = Infinity, max = -Infinity;
+    for (let {points} of animationList) {
+        let amax = arrayMax(points.map(x => x[0])),
+            amin = arrayMin(points.map(x => x[0]));
+        max = Math.max(max, amax);
+        min = Math.min(min, amin);
+    }
+
+    const mapper = makeMapper(min, max);
+    for (let {points, color} of animationList) {
+        animate(points, 2, mapper, color);
     }
 }
 
