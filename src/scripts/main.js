@@ -33,7 +33,7 @@ const integratorFns = {
     "eulerg": eulerg,
     "midpoint": midpoint,
     "midpoint2": midpoint2,
-    "midpointg": midpointg,
+    // "midpointg": midpointg,
     "rk4": rk4,
     "rk42": rk42,
     "leapfrog2": leapfrog2,
@@ -158,7 +158,7 @@ function restartGravity() {
     let animationList = [];
 
     for (let currentIntegrator of currentIntegrators) {
-        if (currentIntegrator === "rk4") continue;
+        if (currentIntegrator === "rk4" || currentIntegrator === "exact") continue;
 
         let color = integratorColors[currentIntegrator];
         let integratorFn = integratorFns[currentIntegrator + "g"];
