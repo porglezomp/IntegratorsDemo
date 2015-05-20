@@ -66,20 +66,44 @@ function midpointg(objects, t0, t1, n) {
             for (let other of objects) {
                 if (other === obj) continue;
 
-                const dx = other.x - obj.x,
-                      dy = other.y - obj.y;
-                const r2 = dx*dx + dy*dy;
-                const r = Math.sqrt(r2);
-                const a = obj.m*other.m*G/r2;
+                let dx = other.x - obj.x,
+                    dy = other.y - obj.y;
+                let r2 = dx*dx + dy*dy;
+                let r = Math.sqrt(r2);
+                let a = obj.m*other.m*G/r2;
                 Fx += dx/r * a; Fy += dy/r * a;
             }
-            let vx = obj.vx + Fx*h/obj.m,
-                vy = obj.vy + Fy*h/obj.m;
-            let x = obj.x + obj.vx*h,
-                y = obj.y + obj.vy*h;
+            let vx = obj.vx + Fx*h/obj.m/2,
+                vy = obj.vy + Fy*h/obj.m/2;
+            let x = obj.x + obj.vx*h/2,
+                y = obj.y + obj.vy*h/2;
             tmp.push({m: obj.m, x, y, vx, vy});
         }
-        objects = tmp;
+        
+        // x_{n+1} = x_n + hf(x + hf(x, v)/2, v + hg(x, v)/2)
+        // v_{n+1} = v_n + hg(x + hf(x, v)/2, v + hg(x, v)/2)
+
+        // tmp contains x + hf(x, v)/2 and v + hg(x, v)/2
+        let tmp2 = [];
+        for (let [start, obj] of zip(objects, tmp)) {
+            let Fx = 0, Fy = 0;
+            for (let other of tmp) {
+                if (other === obj) continue;
+
+                let dx = other.x - obj.x,
+                    dy = other.y - obj.y;
+                let r2 = dx*dx + dy*dy;
+                let r = Math.sqrt(r2);
+                let a = obj.m*other.m*G/r2;
+                Fx += dx/r * a; Fy += dy/r * a;
+            }
+            let vx = start.vx + Fx*h/obj.m,
+                vy = start.vy + Fy*h/obj.m;
+            let x = start.x + obj.vx*h,
+                y = start.y + obj.vy*h;
+            tmp2.push({m: start.m, x, y, vx, vy});
+        }
+        objects = tmp2;
         results.push(objects.map(o => ({x: o.x, y: o.y})));
     }
     return results;
@@ -147,6 +171,8 @@ function rk42(f, g, x0, v0, t0, t1, n) {
     }
     return results;
 }
+
+// let rk4g = leapfrogg;
 
 function leapfrog2(_, F, x0, v0, t0, t1, n) {
     const h = (t1 - t0)/n;

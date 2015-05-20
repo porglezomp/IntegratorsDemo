@@ -12,3 +12,19 @@ canvas#canvas {
 #controls {
     float: right;
 }
+
+#gravity-controls {
+    height: 500px;
+    width: 240px;
+    float: left;
+}
+
+textarea#gravity-text {
+    width: 240px;
+    height: 413px;
+    resize: none;
+}
+
+button#gravity-submit {
+    margin-top: -9px;
+}

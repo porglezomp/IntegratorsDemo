@@ -27,6 +27,10 @@ function* range(begin, end, interval = 1) {
     }
 }
 
+function saturate(x) {
+    return (x > 0) ? ((x < 1) ? x : 1) : 0;
+}
+
 function* take(n, gen) {
     gen = intoGenerator(gen);
     for (let i = 0; i < n; i++) {

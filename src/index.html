@@ -16,7 +16,7 @@
             <span id="exact"><input type="checkbox" name="integrator" value="exact" checked> Exact <br></span>
             <input type="checkbox" name="integrator" value="euler"> Euler <br>
             <input type="checkbox" name="integrator" value="midpoint"> Midpoint <br>
-            <input type="checkbox" name="integrator" value="rk4"> RK4 <br>
+            <span id="rk4"><input type="checkbox" name="integrator" value="rk4"> RK4 <br></span>
             <span id="leapfrog"><input type="checkbox" name="integrator" value="leapfrog"> Leapfrog</span>
         </div>
         <div id="problem">
@@ -33,9 +33,23 @@
             <input id="t0num" type="text" size="6" maxlength="6"><br>
             T<sub>1</sub>:
             <input id="t1num" type="text" size="6" maxlength="6"><br>
+            D&deg;:
+            <input id="duration" type="text" size="6" maxlength="6"><br>
+            D<sub>s</sub>:
+            <input id="spaceDuration" type="text" size="6" maxlength="6"><br>
             
             <button id="restart">Restart</button>
         </div>
+    </div>
+    <div id="gravity-controls">
+        <textarea id="gravity-text">[
+{"m": 10, "x": 0, "y": 0, "vx": 0, "vy": 0.10488},
+{"m": 1, "x": 10, "y": 0, "vx": 0, "vy": 1.0488},
+{"m": 2, "x": 10, "y": 10, "vx": 0.5, "vy": 0}
+]</textarea>
+        <button id="gravity-submit">
+            Initial conditions
+        </button>
     </div>
     <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script type="text/javascript" src="scripts/script.js"></script>
