@@ -23,6 +23,68 @@ function euler2(f, g, x0, v0, t0, t1, n) {
     return results;
 }
 
+function eulerg(objects, t0, t1, n) {
+    const G = 1;
+    const h = (t1 - t0)/n;
+    let results = [];
+    results.push(objects.map(o => ({x: o.x, y: o.y})));
+    for (let i = 0; i < n; i++) {
+        let tmp = [];
+        for (let obj of objects) {
+            let Fx = 0, Fy = 0;
+            for (let other of objects) {
+                if (other === obj) continue;
+
+                const dx = other.x - obj.x,
+                      dy = other.y - obj.y;
+                const r2 = dx*dx + dy*dy;
+                const r = Math.sqrt(r2);
+                const a = obj.m*other.m*G/r2;
+                Fx += dx/r * a; Fy += dy/r * a;
+            }
+            let vx = obj.vx + Fx*h/obj.m,
+                vy = obj.vy + Fy*h/obj.m;
+            let x = obj.x + obj.vx*h,
+                y = obj.y + obj.vy*h;
+            tmp.push({m: obj.m, x, y, vx, vy});
+        }
+        objects = tmp;
+        results.push(objects.map(o => ({x: o.x, y: o.y})));
+    }
+    return results;
+}
+
+function midpointg(objects, t0, t1, n) {
+    const G = 1;
+    const h = (t1 - t0)/n;
+    let results = [];
+    results.push(objects.map(o => ({x: o.x, y: o.y})));
+    for (let i = 0; i < n; i++) {
+        let tmp = [];
+        for (let obj of objects) {
+            let Fx = 0, Fy = 0;
+            for (let other of objects) {
+                if (other === obj) continue;
+
+                const dx = other.x - obj.x,
+                      dy = other.y - obj.y;
+                const r2 = dx*dx + dy*dy;
+                const r = Math.sqrt(r2);
+                const a = obj.m*other.m*G/r2;
+                Fx += dx/r * a; Fy += dy/r * a;
+            }
+            let vx = obj.vx + Fx*h/obj.m,
+                vy = obj.vy + Fy*h/obj.m;
+            let x = obj.x + obj.vx*h,
+                y = obj.y + obj.vy*h;
+            tmp.push({m: obj.m, x, y, vx, vy});
+        }
+        objects = tmp;
+        results.push(objects.map(o => ({x: o.x, y: o.y})));
+    }
+    return results;
+}
+
 function midpoint(f, x0, t0, t1, n) {
     const h = (t1 - t0)/n;
     let results = [], t = t0, x = x0;
@@ -96,6 +158,58 @@ function leapfrog2(_, F, x0, v0, t0, t1, n) {
         v += (a + F(x))*h/2;
         t += h;
         results.push([x, v]);
+    }
+    return results;
+}
+
+function leapfrogg(objects, t0, t1, n) {
+    const G = 1;
+    const h = (t1 - t0)/n;
+    let results = [];
+    results.push(objects.map(o => ({x: o.x, y: o.y})));
+
+    function calcAccel(objects) {
+        let tmp = [];
+        for (let obj of objects) {
+            let Fx = 0, Fy = 0;
+            for (let other of objects) {
+                if (other === obj) continue;
+
+                const dx = other.x - obj.x, dy = other.y - obj.y;
+                const r2 = dx*dx + dy*dy;
+                const a = obj.m*other.m*G/r2/Math.sqrt(r2);
+                Fx += dx * a; Fy += dy * a;
+            }
+            tmp.push({ax: Fx/obj.m, ay: Fy/obj.m});
+        }
+        return tmp;
+    }
+
+    for (let i = 0; i < n; i++) {
+        let accel = calcAccel(objects);
+
+        let tmp = [];
+        for (let [obj, {ax, ay}] of zip(objects, accel)) {
+            tmp.push({
+                m: obj.m, vx: obj.vx, vy: obj.vy,
+                x: obj.x + (obj.vx + ax*h/2)*h,
+                y: obj.y + (obj.vy + ay*h/2)*h
+            });
+        }
+        objects = tmp;
+
+        let accel2 = calcAccel(objects);
+
+        tmp = [];
+        for (let [obj, {ax, ay}, {ax: ax2, ay: ay2}] of zip(objects, accel, accel2)) {
+            tmp.push({
+                m: obj.m, x: obj.x, y: obj.y,
+                vx: obj.vx + (ax + ax2)*h/2,
+                vy: obj.vy + (ay + ay2)*h/2
+            });
+        }
+        objects = tmp;
+        results.push(objects.map(o => ({x: o.x, y: o.y})));
     }
     return results;
 }

@@ -2,16 +2,19 @@ $(function() { // Begin jQuery
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-const margin = 10;
-const rightMargin = canvas.width - margin;
-const safeWidth = canvas.width - 2*margin;
-const safeHeight = canvas.height - 2*margin;
-const bottomMargin = canvas.height - margin;
-
 function makeMapper(min, max) {
     return function(n) {
-        const x = (n - min)/(max - min);
-        return bottomMargin - safeHeight*x;
+        const x = (min - max === 0) ? 0.5 : (n - min)/(max - min);
+        return (canvas.height - margin) -
+               (canvas.height - 2*margin)*x;
+    };
+}
+
+function makeXMapper(min, max) {
+    return function(n) {
+        const x = (min - max === 0) ? 0.5 : (n - min)/(max - min);
+        return (canvas.width - margin) -
+               (canvas.width - 2*margin)*x;
     };
 }
 
@@ -24,70 +27,17 @@ function performAnimations() {
     }
 }
 
-function animate(points, duration, map=undefined, color="black") {    
-    let time = 0;
-
-    const ps = points.map(a => a[0]);
-    const min = arrayMin(ps), max = arrayMax(ps);
-
-    const mapper = map || makeMapper(min, max);
-    function frame () {
-        ctx.lineWidth = 4;
-        ctx.lineCap = ctx.lineJoin = "round";
-        ctx.strokeStyle = ctx.fillStyle = color;
-
-        let s = time/duration;
-        if (s >= 1) s = 1;
-
-        const index = (points.length - 1) * s;
-        const [i, f] = [floor(index), fract(index)];
-        let items = points[i].slice();
-        const [y0] = points[i];
-        let pos = y0;
-        let items1 = items;
-        if (f > 0) {
-            items1 = points[i+1];
-            let [y1] = points[i+1];
-            pos = y0 + (y1 - y0)*f;
-            for (let n = 0; n < items.length; n++) {
-                items[n] = items[n]+(items1[n] - items[n])*f;
-            }
-        }
-        pos = mapper(pos);
-        ctx.beginPath();
-        ctx.arc(rightMargin, pos, 8, 0, 6.2831853072, false);
-        ctx.fill();
-
-        ctx.beginPath();
-        for (let n = 1; n < items.length; n++) {
-            let start = (items[n] > 0) ? pos-margin : pos+margin;
-            ctx.moveTo(rightMargin - margin*(n-1), start);
-            ctx.lineTo(rightMargin - margin*(n-1), start - 50*items[n]);
-        }
-        ctx.stroke();
-
-        ctx.beginPath();
-        for (let n = 0; n <= i; n++) {
-            const item = points[n]; const [y] = item;
-            const offset = n*safeWidth/(points.length-1) - s*safeWidth + rightMargin;
-            ctx.lineTo(offset, mapper(y));
-        }
-        ctx.lineTo(rightMargin, pos);
-        ctx.stroke();
-
-        time += 1/60;
-    }
-    runningAnimations.push(frame);
-}
-
 const integratorFns = {
     "euler": euler,
     "euler2": euler2,
+    "eulerg": eulerg,
     "midpoint": midpoint,
     "midpoint2": midpoint2,
+    "midpointg": midpointg,
     "rk4": rk4,
     "rk42": rk42,
-    "leapfrog2": leapfrog2
+    "leapfrog2": leapfrog2,
+    "leapfrogg": leapfrogg,
 };
 
 const integratorColors = {
@@ -133,14 +83,27 @@ $("input[name=problem]:radio").change(function() {
 });
 
 $("#restart").click(restart);
+$(document).keypress(function(e) {
+    if (e.which == 13) {
+        t0 = Number($("#t0num")[0].value);
+        t1 = Number($("#t1num")[0].value);
+        n = Number($("#steps")[0].value);
+        restart();
+    }
+});
 function restart() {
+    if (currentProblem === "gravity") {
+        restartGravity();
+        return;
+    }
+
     runningAnimations = [];
     let animationList = [];
+
     for (let currentIntegrator of currentIntegrators) {
         if (currentProblem === "decay" || currentProblem === "spring") {
             let color = integratorColors[currentIntegrator];
             if (currentIntegrator === "exact") {
-                console.log(t0, t1, n);
                 const times = Array.from(range(0, n+1)).map(i => (t1 - t0)/n * i);
                 let points;
                 if (currentProblem === "decay") {
@@ -180,7 +143,49 @@ function restart() {
 
     const mapper = makeMapper(min, max);
     for (let {points, color} of animationList) {
-        animate(points, 2, mapper, color);
+        runningAnimations.push(animate(points, 2, canvas, mapper, color));
+    }
+}
+
+const objs = [
+    {m: 10, x: 0, y: 0, vx: 0, vy: Math.sqrt(11/10)/10},
+    {m: 1, x: 10, y: 0, vx: 0, vy: Math.sqrt(11/10)},
+    {m: 2, x: 10, y: 10, vx: 0.5, vy: 0}
+];
+
+function restartGravity() {
+    runningAnimations = [];
+    let animationList = [];
+
+    for (let currentIntegrator of currentIntegrators) {
+        if (currentIntegrator === "rk4") continue;
+
+        let color = integratorColors[currentIntegrator];
+        let integratorFn = integratorFns[currentIntegrator + "g"];
+        let points = integratorFn(objs, t0, t1, n);
+
+        animationList.push({points, color});
+    }
+
+    let minx = Infinity, maxx = -Infinity,
+        miny = Infinity, maxy = -Infinity;
+    for (let {points} of animationList) {
+        let amaxx = arrayMax(points.map(a => arrayMax(a.map(b => b.x)))),
+            aminx = arrayMin(points.map(a => arrayMin(a.map(b => b.x)))),
+            amaxy = arrayMax(points.map(a => arrayMax(a.map(b => b.y)))),
+            aminy = arrayMin(points.map(a => arrayMin(a.map(b => b.y))));
+        maxx = Math.max(amaxx, maxx);
+        minx = Math.min(aminx, minx);
+        maxy = Math.max(amaxy, maxy);
+        miny = Math.min(aminy, miny);
+    }
+
+    const mapx = makeXMapper(minx, maxx),
+          mapy = makeMapper(miny, maxy);
+    for (let {points, color} of animationList) {
+        runningAnimations.push(
+            animateGravity(points, 10, canvas, mapx, mapy, color)
+        );
     }
 }
 

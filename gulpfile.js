@@ -41,11 +41,11 @@ gulp.task('htmlpage', function() {
 // JS concat, ES6 -> ES5, strip debug, uglify, write sourcemap
 gulp.task('scripts', ['jshint'], function() {
     return gulp.src(['src/scripts/lib.js', 'src/scripts/*.js'])
-        .pipe(sourcemaps.init())
+        // .pipe(sourcemaps.init())
         .pipe(babel())
         .on('error', swallowError)
         .pipe(concat('script.js'))
-        .pipe(sourcemaps.write('.'))
+        // .pipe(sourcemaps.write('.'))
         // .pipe(stripDebug())
         // .pipe(uglify())
         .pipe(gulp.dest('./build/scripts/'));
